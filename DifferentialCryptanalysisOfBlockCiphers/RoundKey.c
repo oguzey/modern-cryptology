@@ -33,8 +33,10 @@ void round_key_generate_new(RoundKey *a_rkey)
 {
 	assert(a_rkey);
 
+	int i = 0;
+
 	srand(time(NULL));
-	for(int i = 0; i < AMOUNT_SUBKEYS; ++i) {
+	for(i = 0; i < AMOUNT_SUBKEYS; ++i) {
 		a_rkey->keys[i] = UINT16_C(rand()) % UINT_LEAST16_MAX;
 	}
 }
@@ -43,15 +45,26 @@ void round_key_set_key(RoundKey *a_rkey, uint16_t *a_new_keys)
 {
 	assert(a_rkey);
 	assert(a_new_keys);
-	for(int i = 0; i < AMOUNT_SUBKEYS; ++i) {
+
+	int i = 0;
+
+	for(i = 0; i < AMOUNT_SUBKEYS; ++i) {
 		a_rkey->keys[i] = a_new_keys[i];
 	}
 
 }
 
+void round_key_reset_using(RoundKey *a_rkey)
+{
+	assert(a_rkey);
+
+	a_rkey->current_subkey = 0;
+}
+
 uint16_t round_key_next(RoundKey *a_rkey)
 {
 	assert(a_rkey);
+	assert(a_rkey->current_subkey >= 0 && a_rkey->current_subkey < AMOUNT_SUBKEYS);
 
 	return a_rkey->keys[(a_rkey->current_subkey)++];
 }
