@@ -5,6 +5,7 @@
 #include "RoundKey.h"
 #include "HeysCipher.h"
 
+static inline int get_size_file(const char *a_filename);
 static inline int read_file(const char *a_filename, uint16_t **a_output);
 
 int main(void)
@@ -36,36 +37,63 @@ int main(void)
 	return 0;
 }
 
+/**
+ * @brief get_size_file - Return size of file, in bytes.
+ * @param a_filename    - Name of file.
+ * @return              - Size of file if file was handled successfully
+ *                        -1 - error was occurred.
+ */
+static inline int get_size_file(const char *a_filename)
+{
+    struct stat sb;
+
+    if (a_filename == NULL) {
+        printf("File not provided\n");
+        return -1;
+    }
+
+    if (stat(a_filename, &sb) == -1) {
+        printf("Could not process file '%s'\n", a_filename);
+        perror("Error was");
+        return -1;
+    }
+    printf("The file '%s' has size: %d bytes\n", a_filename, (int) sb.st_size);
+    return sb.st_size;
+}
+
+/**
+ * @brief read_file     - Read file and write data to a_output.
+ * @param a_filename    - Name of file for read.
+ * @param a_output      - Container for saving read data.
+ * @return              - Size of output container or
+ *                        -1 if error was occurred.
+ */
 static inline int read_file(const char *a_filename, uint16_t **a_output)
 {
-	struct stat sb;
+
 	FILE *file = NULL;
 	uint16_t *data = NULL;
-	int c, i , shift;
+    int c, i , shift, res;
 	size_t size = 0;
 
-	if (a_filename == NULL) {
-		printf("File not provided\n");
-		return -1;
-	}
+    if ((res = get_size_file(a_filename)) < 0) {
+        printf("Error was occurred.\n");
+        return -1;
+    }
+    size = res;
 
-	if (stat(a_filename, &sb) == -1) {
-		printf("Could not process file '%s'\n", a_filename);
-		perror("Error was");
-		return -1;
-	}
-	size = sb.st_size;
-	printf("The file '%s' has size: %d bytes\n", a_filename, (int) size);
+    /* conver to size in bytes to size for array of uint16_t*/
+    if (size & 1) {
+        size++;
+    }
+    size /= 2;
 
 	if ((file = fopen(a_filename, "r")) == NULL) {
 		printf("Could not open file '%s'\n", a_filename);
 		perror("Error was");
 		return -1;
 	}
-	size = size / 2;
-	if (size * 2 + 1 == sb.st_size) {
-		size++;
-	}
+
 	data = malloc(sizeof(uint16_t) * size);
 	if (data == NULL) {
 		perror("Error was");
