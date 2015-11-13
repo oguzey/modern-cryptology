@@ -3,6 +3,9 @@
 
 #include <stdint.h>
 
+#define AMOUNT_SUBKEYS			7
+#define AMOUNT_SUBKEYS_IN_BYTES		AMOUNT_SUBKEYS * sizeof(uint16_t)
+
 typedef struct round_key RoundKey;
 
 RoundKey* round_key_create(void);

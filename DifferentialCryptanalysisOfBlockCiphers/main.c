@@ -5,10 +5,25 @@
 #include "RoundKey.h"
 #include "HeysCipher.h"
 
+#define panic(msg, ...) \
+    printf(msg, ##__VA_ARGS__); \
+    exit(1);
+
+typedef enum {
+	ENCRYPT,
+	DECRYPT
+} Action;
+
+static Action _s_action = -1;
+static char *_s_input_file = NULL;
+static char *_s_output_file = NULL;
+static char *_s_key_file = NULL;
+
 static inline int get_size_file(const char *a_filename);
 static inline int read_file(const char *a_filename, uint16_t **a_output);
+static inline void get_args(int argc, char **argv);
 
-int main(void)
+int main(int argc, char **argv)
 {
 	int res = 0;
 	size_t size = 0;
@@ -18,7 +33,18 @@ int main(void)
 	uint16_t *input = NULL;
 	uint16_t *output = NULL;
 
-	res = read_file("file", &input);
+	get_args(argc, argv);
+
+	res = read_file(_s_key_file, &input);
+	if (res < 0) {
+		fprintf(stderr, "Unexpected termination of program.");
+		return -1;
+	} else if (res == AMOUNT_SUBKEYS_IN_BYTES) {
+		return -1;
+	}
+	size = res;
+
+	res = read_file(_s_input_file, &input);
 	if (res < 0) {
 		fprintf(stderr, "Unexpected termination of program.");
 		return -1;
@@ -114,4 +140,46 @@ static inline int read_file(const char *a_filename, uint16_t **a_output)
 	fclose(file);
 	*a_output = data;
 	return size;
+}
+
+static inline void get_args(int argc, char **argv)
+{
+    char *info;
+    info = "Usage: HeysCipher [-e|-d] "
+			"-i <input-file> -o <output-file> -k <key-file>\n";
+
+    int i;
+    for (i = 1; i < argc; ++i) {
+	if (strcmp(argv[i],"-e")==0 || strcmp(argv[i],"--encrypt")==0) {
+		_s_action = ENCRYPT;
+	} else if (strcmp(argv[i],"-d")==0 || strcmp(argv[i],"--decrypt")==0) {
+		_s_action = DECRYPT;
+	} else if (strcmp(argv[i],"-i")==0 || strcmp(argv[i],"--input-file")==0) {
+	    if (argc > i + 1) {
+		_s_input_file = argv[i + 1];
+		i++;
+	    } else {
+		panic("Missing argument for option %s\n", argv[i]);
+	    }
+	} else if (strcmp(argv[i],"-o")==0 || strcmp(argv[i],"--output-file")==0) {
+	    if (argc > i + 1) {
+		_s_output_file = argv[i + 1];
+		i++;
+	    } else {
+		panic("Missing argument for option %s\n", argv[i]);
+	    }
+	} else if (strcmp(argv[i],"-k")==0 || strcmp(argv[i],"--key-file")==0) {
+	    if (argc > i + 1) {
+		_s_key_file = argv[i + 1];
+		i++;
+	    } else {
+		panic("Missing argument for option %s\n", argv[i]);
+	    }
+	} else {
+	    panic("%s\n", info);
+	}
+    }
+    if (!_s_input_file || !_s_output_file || _s_action == -1) {
+	panic("%s\n", info);
+    }
 }

@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <assert.h>
 
-#define AMOUNT_SUBKEYS 7
+
 
 struct round_key {
 	uint16_t keys[AMOUNT_SUBKEYS];
