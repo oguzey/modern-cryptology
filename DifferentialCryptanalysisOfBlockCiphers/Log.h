@@ -2,6 +2,7 @@
 #define LOG_H
 
 #include <stdint.h>
+#include <stdlib.h>
 
 #define info(format, ...) printf("[%s] " format "\n", __func__,  ##__VA_ARGS__)
 
@@ -23,6 +24,8 @@
 	} while (0)
 
 
-
+#define fatal(format, ...)							\
+	fprintf(stderr, "[%s] " format "\n", __func__,  ##__VA_ARGS__);		\
+	exit(-1)
 
 #endif // LOG_H

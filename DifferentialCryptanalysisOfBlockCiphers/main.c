@@ -4,21 +4,15 @@
 #include <string.h>
 #include "RoundKey.h"
 #include "HeysCipher.h"
+#include "Log.h"
 
-#define panic(msg, ...) \
-    printf(msg, ##__VA_ARGS__); \
-    exit(1);
-
-typedef enum {
-	ENCRYPT,
-	DECRYPT
-} Action;
 
 static Action _s_action = -1;
 static char *_s_input_file = NULL;
 static char *_s_output_file = NULL;
 static char *_s_key_file = NULL;
 
+static inline void write_to_file(uint16_t *a_input, size_t a_size, const char *a_filename);
 static inline int get_size_file(const char *a_filename);
 static inline int read_file(const char *a_filename, uint16_t **a_output);
 static inline void get_args(int argc, char **argv);
@@ -30,36 +24,43 @@ int main(int argc, char **argv)
 	RoundKey *round_key = NULL;
 	HeysCipher *heys_cipher = NULL;
 
+	uint16_t *subkeys = NULL;
 	uint16_t *input = NULL;
 	uint16_t *output = NULL;
 
 	get_args(argc, argv);
 
-	res = read_file(_s_key_file, &input);
-	if (res < 0) {
-		fprintf(stderr, "Unexpected termination of program.");
-		return -1;
-	} else if (res == AMOUNT_SUBKEYS_IN_BYTES) {
-		return -1;
+	if (_s_key_file) {
+		res = read_file(_s_key_file, &subkeys);
+		if (res < 0) {
+			fatal("Error occurred during reading key-file.");
+		} else if (res == AMOUNT_SUBKEYS_IN_BYTES) {
+			fatal("Wrong length of key.");
+		}
 	}
-	size = res;
 
 	res = read_file(_s_input_file, &input);
 	if (res < 0) {
-		fprintf(stderr, "Unexpected termination of program.");
-		return -1;
+		fatal("Error occurred during reading input-file.");
 	}
 	size = res;
 
-	round_key = round_key_create();
+	round_key = round_key_create(subkeys);
 	heys_cipher = heys_cipher_create(round_key);
 
-	heys_cipher_encrypt(heys_cipher, input, size, &output);
+	heys_cipher_run(heys_cipher, _s_action, input, size, &output);
+
+	write_to_file(output, size, _s_output_file);
 
 	heys_cipher_destroy(heys_cipher);
 	round_key_destroy(round_key);
 
-	printf("Hello World!\n");
+	free(input);
+	free(output);
+	free(subkeys);
+
+
+	printf("End program.\n");
 	return 0;
 }
 
@@ -71,20 +72,21 @@ int main(int argc, char **argv)
  */
 static inline int get_size_file(const char *a_filename)
 {
-    struct stat sb;
+	struct stat sb;
 
-    if (a_filename == NULL) {
-        printf("File not provided\n");
-        return -1;
-    }
+	if (a_filename == NULL) {
+		printf("File not provided\n");
+		return -1;
+	}
 
-    if (stat(a_filename, &sb) == -1) {
-        printf("Could not process file '%s'\n", a_filename);
-        perror("Error was");
-        return -1;
-    }
-    printf("The file '%s' has size: %d bytes\n", a_filename, (int) sb.st_size);
-    return sb.st_size;
+	if (stat(a_filename, &sb) == -1) {
+		printf("Could not process file '%s'\n", a_filename);
+		perror("Error was");
+		return -1;
+	}
+	printf("The file '%s' has size: %d bytes\n", a_filename,
+	                (int) sb.st_size);
+	return sb.st_size;
 }
 
 /**
@@ -99,20 +101,23 @@ static inline int read_file(const char *a_filename, uint16_t **a_output)
 
 	FILE *file = NULL;
 	uint16_t *data = NULL;
-    int c, i , shift, res;
+	int c = 0;
+	int i = 0;
+	int shift = 0;
+	int res = 0;
 	size_t size = 0;
 
-    if ((res = get_size_file(a_filename)) < 0) {
-        printf("Error was occurred.\n");
-        return -1;
-    }
-    size = res;
+	if ((res = get_size_file(a_filename)) < 0) {
+		printf("Error was occurred.\n");
+		return -1;
+	}
+	size = res;
 
-    /* conver to size in bytes to size for array of uint16_t*/
-    if (size & 1) {
-        size++;
-    }
-    size /= 2;
+	/* convert to size in bytes to size for array of uint16_t*/
+	if (size & 1) {
+		size++;
+	}
+	size /= 2;
 
 	if ((file = fopen(a_filename, "r")) == NULL) {
 		printf("Could not open file '%s'\n", a_filename);
@@ -132,7 +137,7 @@ static inline int read_file(const char *a_filename, uint16_t **a_output)
 	while ((c = fgetc(file)) != EOF) {
 
 		data[i] = c << shift * 8;
-		shift = ++shift % 2;
+		shift = (shift + 1) % 2;
 		if (!shift) {
 			i++;
 		}
@@ -142,44 +147,62 @@ static inline int read_file(const char *a_filename, uint16_t **a_output)
 	return size;
 }
 
+static inline void write_to_file(uint16_t *a_input, size_t a_size, const char *a_filename)
+{
+	FILE *file;
+	int i = 0;
+
+	if ((file = fopen(a_filename, "w")) == NULL) {
+		printf("Could not open file '%s'\n", a_filename);
+		perror("Error was");
+		exit(1);
+	}
+
+	for (i = 0; i < (int) a_size; ++i) {
+		fputc(a_input[i] & 0xFF, file);
+		fputc((a_input[i] >> 8) & 0xFF, file);
+	}
+	fclose(file);
+}
+
 static inline void get_args(int argc, char **argv)
 {
-    char *info;
-    info = "Usage: HeysCipher [-e|-d] "
+	char *info;
+	info = "Usage: HeysCipher [-e|-d] "
 			"-i <input-file> -o <output-file> -k <key-file>\n";
 
-    int i;
-    for (i = 1; i < argc; ++i) {
-	if (strcmp(argv[i],"-e")==0 || strcmp(argv[i],"--encrypt")==0) {
-		_s_action = ENCRYPT;
-	} else if (strcmp(argv[i],"-d")==0 || strcmp(argv[i],"--decrypt")==0) {
-		_s_action = DECRYPT;
-	} else if (strcmp(argv[i],"-i")==0 || strcmp(argv[i],"--input-file")==0) {
-	    if (argc > i + 1) {
-		_s_input_file = argv[i + 1];
-		i++;
-	    } else {
-		panic("Missing argument for option %s\n", argv[i]);
-	    }
-	} else if (strcmp(argv[i],"-o")==0 || strcmp(argv[i],"--output-file")==0) {
-	    if (argc > i + 1) {
-		_s_output_file = argv[i + 1];
-		i++;
-	    } else {
-		panic("Missing argument for option %s\n", argv[i]);
-	    }
-	} else if (strcmp(argv[i],"-k")==0 || strcmp(argv[i],"--key-file")==0) {
-	    if (argc > i + 1) {
-		_s_key_file = argv[i + 1];
-		i++;
-	    } else {
-		panic("Missing argument for option %s\n", argv[i]);
-	    }
-	} else {
-	    panic("%s\n", info);
+	int i;
+	for (i = 1; i < argc; ++i) {
+		if (strcmp(argv[i], "-e") == 0 || strcmp(argv[i], "--encrypt") == 0) {
+			_s_action = ENCRYPT;
+		} else if (strcmp(argv[i], "-d") == 0 || strcmp(argv[i], "--decrypt") == 0) {
+			_s_action = DECRYPT;
+		} else if (strcmp(argv[i], "-i") == 0 || strcmp(argv[i], "--input-file") == 0) {
+			if (argc > i + 1) {
+				_s_input_file = argv[i + 1];
+				i++;
+			} else {
+				fatal("Missing argument for option %s", argv[i]);
+			}
+		} else if (strcmp(argv[i], "-o") == 0 || strcmp(argv[i], "--output-file") == 0) {
+			if (argc > i + 1) {
+				_s_output_file = argv[i + 1];
+				i++;
+			} else {
+				fatal("Missing argument for option %s", argv[i]);
+			}
+		} else if (strcmp(argv[i], "-k") == 0 || strcmp(argv[i], "--key-file") == 0) {
+			if (argc > i + 1) {
+				_s_key_file = argv[i + 1];
+				i++;
+			} else {
+				fatal("Missing argument for option %s", argv[i]);
+			}
+		} else {
+			fatal("%s", info);
+		}
 	}
-    }
-    if (!_s_input_file || !_s_output_file || _s_action == -1) {
-	panic("%s\n", info);
-    }
+	if (!_s_input_file || !_s_output_file || _s_action == -1) {
+		fatal("%s", info);
+	}
 }

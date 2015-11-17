@@ -30,7 +30,12 @@ static int _s_sbox[] = {0xF, 0x6, 0x5, 0x8, 0xE, 0xB, 0xA, 0x4, 0xC, 0x0, 0x3, 0
 static inline void addition_with_key(uint16_t *a_block, uint16_t a_key);
 static inline void substitution_by_sbox(uint16_t *a_block);
 static inline void permutation_of_bits(uint16_t *a_block);
-static inline void run_rounds(RoundKey *a_round_key, uint16_t *a_block);
+static inline void encrypt(RoundKey *a_round_key, uint16_t *a_block);
+static inline void decrypt(RoundKey *a_round_key, uint16_t *a_block);
+
+typedef void(*action_worker)(RoundKey *a_round_key, uint16_t *a_block);
+
+static action_worker do_action[] = {encrypt, decrypt};
 
 /*****************************************************************
  **************** PUBLIC FUNCTIONS *******************************
@@ -51,7 +56,7 @@ void heys_cipher_destroy(HeysCipher *a_heys_cipher)
 	}
 }
 
-void heys_cipher_encrypt(HeysCipher *a_heys_cipher, uint16_t *a_input_data
+void heys_cipher_run(HeysCipher *a_heys_cipher, Action a_action, uint16_t *a_input_data
 		,size_t a_size, uint16_t **a_output_data)
 {
 	assert(a_input_data);
@@ -62,7 +67,7 @@ void heys_cipher_encrypt(HeysCipher *a_heys_cipher, uint16_t *a_input_data
 	memcpy(output, a_input_data, sizeof(uint16_t) * a_size);
 
 	for (index = 0; index < a_size; ++index) {
-		run_rounds(a_heys_cipher->round_key, &output[index]);
+		do_action[a_action](a_heys_cipher->round_key, &output[index]);
 	}
 
 	*a_output_data = output;
@@ -108,18 +113,36 @@ static inline void permutation_of_bits(uint16_t *a_block)
 	}
 }
 
-static inline void run_rounds(RoundKey *a_round_key, uint16_t *a_block)
+static inline void encrypt(RoundKey *a_round_key, uint16_t *a_block)
 {
 	assert(a_round_key);
 
 	int i = 0;
 
-	round_key_reset_using(a_round_key);
+	round_key_reset_using_to_start(a_round_key);
 
 	for (i = 0; i < AMOUNT_OF_ROUNDS; ++i) {
-		addition_with_key(a_block, round_key_next(a_round_key));
+		addition_with_key(a_block, round_key_next_subkey(a_round_key));
 		substitution_by_sbox(a_block);
 		permutation_of_bits(a_block);
 	}
-	addition_with_key(a_block, round_key_next(a_round_key));
+	addition_with_key(a_block, round_key_next_subkey(a_round_key));
+}
+
+static inline void decrypt(RoundKey *a_round_key, uint16_t *a_block)
+{
+	assert(a_round_key);
+
+	int i = 0;
+
+	round_key_reset_using_to_end(a_round_key);
+
+	addition_with_key(a_block, round_key_next_subkey(a_round_key));
+
+	for (i = 0; i < AMOUNT_OF_ROUNDS; ++i) {
+		permutation_of_bits(a_block);
+		substitution_by_sbox(a_block);
+		addition_with_key(a_block, round_key_next_subkey(a_round_key));
+	}
+
 }
