@@ -1,4 +1,3 @@
-#include <stdio.h>
 #include <sys/stat.h>
 #include <stdlib.h>
 #include <string.h>
@@ -60,7 +59,7 @@ int main(int argc, char **argv)
 	free(subkeys);
 
 
-	printf("End program.\n");
+	info("End program.");
 	return 0;
 }
 
@@ -75,16 +74,15 @@ static inline int get_size_file(const char *a_filename)
 	struct stat sb;
 
 	if (a_filename == NULL) {
-		printf("File not provided\n");
+		warn("File not provided.");
 		return -1;
 	}
 
 	if (stat(a_filename, &sb) == -1) {
-		printf("Could not process file '%s'\n", a_filename);
-		perror("Error was");
+		error("Could not process file '%s'", a_filename);
 		return -1;
 	}
-	printf("The file '%s' has size: %d bytes\n", a_filename,
+	info("The file '%s' has size: %d bytes", a_filename,
 	                (int) sb.st_size);
 	return sb.st_size;
 }
@@ -108,7 +106,7 @@ static inline int read_file(const char *a_filename, uint16_t **a_output)
 	size_t size = 0;
 
 	if ((res = get_size_file(a_filename)) < 0) {
-		printf("Error was occurred.\n");
+		warn("Error was occurred.");
 		return -1;
 	}
 	size = res;
@@ -120,14 +118,13 @@ static inline int read_file(const char *a_filename, uint16_t **a_output)
 	size /= 2;
 
 	if ((file = fopen(a_filename, "r")) == NULL) {
-		printf("Could not open file '%s'\n", a_filename);
-		perror("Error was");
+		error("Could not open file '%s'", a_filename);
 		return -1;
 	}
 
 	data = malloc(sizeof(uint16_t) * size);
 	if (data == NULL) {
-		perror("Error was");
+		error("Cannot allocate memory.");
 		fclose(file);
 		return -1;
 	}
@@ -153,8 +150,7 @@ static inline void write_to_file(uint16_t *a_input, size_t a_size, const char *a
 	int i = 0;
 
 	if ((file = fopen(a_filename, "w")) == NULL) {
-		printf("Could not open file '%s'\n", a_filename);
-		perror("Error was");
+		error("Could not open file '%s'", a_filename);
 		exit(1);
 	}
 
