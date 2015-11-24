@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "HeysCipher.h"
-#include "../CommonLib/Log.h"
+#include "mylog.h"
 
 #define SUB_BLOCKS		4
 #define BITS_IN_SUB_BLOCK    4

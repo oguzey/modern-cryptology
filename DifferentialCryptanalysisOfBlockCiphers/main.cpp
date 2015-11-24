@@ -4,7 +4,7 @@
 #include <vector>
 #include "RoundKey.h"
 #include "HeysCipher.h"
-#include "../CommonLib/Log.h"
+#include "mylog.h"
 #include "../CommonLib/ioworker.h"
 
 static Action _s_action = UNDEFINED;

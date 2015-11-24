@@ -2,7 +2,7 @@
 #include <sys/stat.h>
 #include <vector>
 #include "ioworker.h"
-#include "Log.h"
+#include "mylog.h"
 
 template<std::size_t SIZE>
 
