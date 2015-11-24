@@ -7,7 +7,8 @@
 typedef struct heys_cipher HeysCipher;
 
 typedef enum {
-	ENCRYPT = 0,
+	UNDEFINED = 0,
+	ENCRYPT,
 	DECRYPT
 } Action;
 

@@ -1,12 +1,11 @@
-#include "HeysCipher.h"
-#include <stdint.h>
-#include <math.h>
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
+#include "HeysCipher.h"
+#include "../CommonLib/Log.h"
 
-#define SUBBLOCKS		4
-#define BITS_IN_SUBBLOCK	4
+#define SUB_BLOCKS		4
+#define BITS_IN_SUB_BLOCK    4
 #define AMOUNT_OF_ROUNDS	6
 
 struct heys_cipher {
@@ -25,7 +24,7 @@ struct heys_cipher {
 		/* clear i and k bits in x */					\
 		(x & ~(1<<i) & ~(1<<k))
 
-static int _s_sbox[] = {0xF, 0x6, 0x5, 0x8, 0xE, 0xB, 0xA, 0x4, 0xC, 0x0, 0x3, 0x7, 0x2, 0x9, 0x1, 0xD};
+static uint16_t _s_sbox[] = {0xF, 0x6, 0x5, 0x8, 0xE, 0xB, 0xA, 0x4, 0xC, 0x0, 0x3, 0x7, 0x2, 0x9, 0x1, 0xD};
 
 static inline void addition_with_key(uint16_t *a_block, uint16_t a_key);
 static inline void substitution_by_sbox(uint16_t *a_block);
@@ -86,7 +85,7 @@ static inline void substitution_by_sbox(uint16_t *a_block)
 {
 	int pos = 0;
 	int i = 0;
-	for(i = 0; i < SUBBLOCKS; ++i) {
+	for(i = 0; i < SUB_BLOCKS; ++i) {
 		pos = (*a_block >> 4 * i) & 0xF;
 		*a_block = _s_sbox[pos];
 	}
@@ -99,15 +98,15 @@ static inline void permutation_of_bits(uint16_t *a_block)
 	int i = 0
 		,k = 0;
 
-	for(i = 0; i < SUBBLOCKS; ++i) {
-		for(k = 0; k < BITS_IN_SUBBLOCK; ++k) {
+	for(i = 0; i < SUB_BLOCKS; ++i) {
+		for(k = 0; k < BITS_IN_SUB_BLOCK; ++k) {
 
-			pos_i = i * BITS_IN_SUBBLOCK + k;
-			pos_j = k * BITS_IN_SUBBLOCK + i;
+			pos_i = i * BITS_IN_SUB_BLOCK + k;
+			pos_j = k * BITS_IN_SUB_BLOCK + i;
 			if (pos_i > pos_j) {
-				*a_block = SWAP_BITS((*a_block), pos_i, pos_j);
+				*a_block = (uint16_t)(SWAP_BITS((*a_block), pos_i, pos_j));
 			} else {
-				*a_block = SWAP_BITS((*a_block), pos_j, pos_i);
+				*a_block = (uint16_t)(SWAP_BITS((*a_block), pos_j, pos_i));
 			}
 		}
 	}

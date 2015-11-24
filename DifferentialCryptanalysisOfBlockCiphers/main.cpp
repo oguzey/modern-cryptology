@@ -1,19 +1,17 @@
-#include <sys/stat.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
+#include <vector>
 #include "RoundKey.h"
 #include "HeysCipher.h"
-#include "Log.h"
+#include "../CommonLib/Log.h"
+#include "../CommonLib/ioworker.h"
 
-
-static Action _s_action = -1;
+static Action _s_action = UNDEFINED;
 static char *_s_input_file = NULL;
 static char *_s_output_file = NULL;
 static char *_s_key_file = NULL;
 
-static inline void write_to_file(uint16_t *a_input, size_t a_size, const char *a_filename);
-static inline int get_size_file(const char *a_filename);
-static inline int read_file(const char *a_filename, uint16_t **a_output);
 static inline void get_args(int argc, char **argv);
 
 int main(int argc, char **argv)
@@ -23,14 +21,19 @@ int main(int argc, char **argv)
 	RoundKey *round_key = NULL;
 	HeysCipher *heys_cipher = NULL;
 
-	uint16_t *subkeys = NULL;
+	std::vector<uint8_t> *tmp_data = NULL;
+
+	std::vector<uint16_t> *subkeys = NULL;
 	uint16_t *input = NULL;
 	uint16_t *output = NULL;
 
 	get_args(argc, argv);
 
 	if (_s_key_file) {
-		res = read_file(_s_key_file, &subkeys);
+		res = IOWorker::read_file(_s_key_file, &tmp_data);
+
+		IOWorker::convert2unit16_t(tmp_data, &subkeys);
+
 		if (res < 0) {
 			fatal("Error occurred during reading key-file.");
 		} else if (res == AMOUNT_SUBKEYS_IN_BYTES) {
@@ -102,7 +105,7 @@ static inline void get_args(int argc, char **argv)
 			fatal("%s", info);
 		}
 	}
-	if (!_s_input_file || !_s_output_file || _s_action == -1) {
+	if (!_s_input_file || !_s_output_file || _s_action == UNDEFINED) {
 		fatal("%s", info);
 	}
 }
