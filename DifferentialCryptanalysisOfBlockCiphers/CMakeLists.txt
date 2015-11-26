@@ -4,10 +4,10 @@ project(DifferentialCryptanalysisOfBlockCiphers)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 
 set(SOURCE_FILES
-    HeysCipher.c
+        HeysCipher.cpp
     HeysCipher.h
     main.cpp
-    RoundKey.c
+        RoundKey.cpp
     RoundKey.h)
 
 add_executable(DifferentialCryptanalysisOfBlockCiphers ${SOURCE_FILES})

@@ -4,8 +4,10 @@
 #include <vector>
 #include "RoundKey.h"
 #include "HeysCipher.h"
-#include "mylog.h"
 #include "../CommonLib/ioworker.h"
+#include "../CommonLib/logger.h"
+
+mclogger::Logger logger = mclogger::Logger::get_logger();
 
 static Action _s_action = UNDEFINED;
 static char *_s_input_file = NULL;
@@ -21,31 +23,27 @@ int main(int argc, char **argv)
 	RoundKey *round_key = NULL;
 	HeysCipher *heys_cipher = NULL;
 
-	std::vector<uint8_t> *tmp_data = NULL;
-
-	std::vector<uint16_t> *subkeys = NULL;
-	uint16_t *input = NULL;
-	uint16_t *output = NULL;
+	std::vector<uint8_t> *tmp_data = nullptr;
+	std::vector<uint16_t> *subkeys = nullptr;
+	std::vector<uint16_t> *input = nullptr;
+	std::vector<uint16_t> *output = nullptr;
 
 	get_args(argc, argv);
 
 	if (_s_key_file) {
-		res = IOWorker::read_file(_s_key_file, &tmp_data);
-
-		IOWorker::convert2unit16_t(tmp_data, &subkeys);
+		res = IOWorker::read_file(_s_key_file, &subkeys);
 
 		if (res < 0) {
-			fatal("Error occurred during reading key-file.");
+			logger.critical("Error occurred during reading key-file.");
 		} else if (res == AMOUNT_SUBKEYS_IN_BYTES) {
-			fatal("Wrong length of key.");
+			logger.critical("Wrong length of key.");
 		}
 	}
 
-	res = read_file(_s_input_file, &input);
+	res = IOWorker::read_file(_s_input_file, &input);
 	if (res < 0) {
-		fatal("Error occurred during reading input-file.");
+		logger.critical("Error occurred during reading input-file.");
 	}
-	size = res;
 
 	round_key = round_key_create(subkeys);
 	heys_cipher = heys_cipher_create(round_key);
@@ -62,7 +60,7 @@ int main(int argc, char **argv)
 	free(subkeys);
 
 
-	info("End program.");
+	logger.info("End program.");
 	return 0;
 }
 
@@ -70,9 +68,7 @@ int main(int argc, char **argv)
 
 static inline void get_args(int argc, char **argv)
 {
-	char *info;
-	info = "Usage: HeysCipher [-e|-d] "
-			"-i <input-file> -o <output-file> -k <key-file>\n";
+	std::string info("Usage: HeysCipher [-e|-d] -i <input-file> -o <output-file> -k <key-file>\n");
 
 	int i;
 	for (i = 1; i < argc; ++i) {
@@ -85,27 +81,27 @@ static inline void get_args(int argc, char **argv)
 				_s_input_file = argv[i + 1];
 				i++;
 			} else {
-				fatal("Missing argument for option %s", argv[i]);
+				logger.critical("Missing argument for option %s", argv[i]);
 			}
 		} else if (strcmp(argv[i], "-o") == 0 || strcmp(argv[i], "--output-file") == 0) {
 			if (argc > i + 1) {
 				_s_output_file = argv[i + 1];
 				i++;
 			} else {
-				fatal("Missing argument for option %s", argv[i]);
+				logger.critical("Missing argument for option %s", argv[i]);
 			}
 		} else if (strcmp(argv[i], "-k") == 0 || strcmp(argv[i], "--key-file") == 0) {
 			if (argc > i + 1) {
 				_s_key_file = argv[i + 1];
 				i++;
 			} else {
-				fatal("Missing argument for option %s", argv[i]);
+				logger.critical("Missing argument for option %s", argv[i]);
 			}
 		} else {
-			fatal("%s", info);
+			logger.critical("{}", info);
 		}
 	}
 	if (!_s_input_file || !_s_output_file || _s_action == UNDEFINED) {
-		fatal("%s", info);
+		logger.critical("{}", info);
 	}
 }

@@ -65,6 +65,23 @@ static int IOWorker::read_file(const char *a_filename, std::vector<uint8_t> **a_
 	return size;
 }
 
+static int IOWorker::read_file(const char *a_filename, std::vector<uint16_t> **a_output)
+{
+	std::vector<uint8_t> *out8 = nullptr;
+	std::vector<uint16_t> *out16 = nullptr;
+	int ret = 0;
+
+	ret = IOWorker::read_file(a_filename, &out8);
+	if (ret < 0) {
+		return ret;
+	}
+	ret = (int) IOWorker::convert2unit16_t(out8, &out16);
+	out8->clear();
+	delete out8;
+	*a_output = out16;
+	return ret;
+}
+
 static void IOWorker::write_to_file(std::vector<uint8_t> *a_input, const char *a_filename)
 {
 	FILE *file;
@@ -81,7 +98,7 @@ static void IOWorker::write_to_file(std::vector<uint8_t> *a_input, const char *a
 	fclose(file);
 }
 
-static int IOWorker::convert2unit16_t(const std::vector<uint8_t> *a_in, std::vector<uint16_t> **a_out)
+static size_t IOWorker::convert2unit16_t(const std::vector<uint8_t> *a_in, std::vector<uint16_t> **a_out)
 {
 	std::vector<uint16_t> *data = nullptr;
 	size_t size_input = a_in->size();
@@ -103,7 +120,7 @@ static int IOWorker::convert2unit16_t(const std::vector<uint8_t> *a_in, std::vec
 		}
 	}
 	*a_out = data;
-	return 0;
+	return size_output;
 }
 
 
