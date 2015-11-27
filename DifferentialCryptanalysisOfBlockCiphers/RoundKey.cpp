@@ -4,6 +4,9 @@
 #include <time.h>
 #include <stdlib.h>
 #include <assert.h>
+#include "../CommonLib/logger.h"
+
+mc::Logger& logger = mc::Logger::get_logger();
 
 enum direction {
 	UNKNOWN,
@@ -94,4 +97,63 @@ uint16_t round_key_next_subkey(RoundKey *a_rkey)
 		--a_rkey->current_subkey;
 	}
 	return ret;
+}
+
+namespace mc {
+
+	RoundKey::RoundKey() {
+		logger.debug("RoundKey default constructor called");
+		path = UNKNOWN;
+		pos_current_subkey = 0;
+		generate_new();
+	}
+
+	RoundKey::RoundKey(const std::array<uint16_t, amount_subkeys> &subkeys, Direction path)
+			: subkeys(subkeys), path(path) {
+		logger.debug("RoundKey constructor with params called");
+		reset_position();
+	}
+
+	void RoundKey::generate_new() {
+		srand((unsigned int) time(NULL));
+		for (auto index = 0; index < subkeys.size(); ++index) {
+			subkeys[index] = (uint16_t)((rand()) % UINT_LEAST16_MAX);
+		}
+	}
+
+	void RoundKey::set_key(const std::array<uint16_t, amount_subkeys> &a_subkeys) {
+		// CHECK ME: I am not sure that is correct
+		subkeys = a_subkeys;
+	}
+
+	void RoundKey::reset_position() {
+		switch (path) {
+			case FORWARD:
+				pos_current_subkey = 0;
+				break;
+			case BACKWARD:
+				pos_current_subkey = amount_subkeys - 1;
+				break;
+			default:
+				logger.critical("Wrong value of direction was provided. Value: '{}'", path);
+				break;
+		}
+	}
+
+	uint16_t RoundKey::next_subkey() {
+		switch (path) {
+			case FORWARD:
+				++pos_current_subkey;
+				break;
+			case BACKWARD:
+				--pos_current_subkey;
+				break;
+			default:
+				logger.critical("Wrong value of direction was provided. Value: '{}'", path);
+				break;
+		}
+		return subkeys.at(pos_current_subkey);
+	}
+
+
 }

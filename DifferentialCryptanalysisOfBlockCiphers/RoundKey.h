@@ -2,6 +2,7 @@
 #define ROUNDKEY_H
 
 #include <stdint.h>
+#include <array>
 
 #define AMOUNT_SUBKEYS			7
 #define AMOUNT_SUBKEYS_IN_BYTES		AMOUNT_SUBKEYS * sizeof(uint16_t)
@@ -21,5 +22,32 @@ void round_key_reset_using_to_start(RoundKey *a_rkey);
 void round_key_reset_using_to_end(RoundKey *a_rkey);
 
 uint16_t round_key_next_subkey(RoundKey *a_rkey);
+
+namespace mc {
+
+    enum Direction {
+        UNKNOWN,
+        FORWARD,
+        BACKWARD
+    };
+
+    class RoundKey {
+    public:
+        const int amount_subkeys = 7;
+        RoundKey();
+        RoundKey(const std::array<uint16_t, amount_subkeys> &subkeys, Direction path);
+        void set_direction(const Direction a_path) { this->path = a_path; };
+        void generate_new();
+        void set_key(const std::array<uint16_t, amount_subkeys> &a_subkeys);
+        void reset_position();
+        uint16_t next_subkey();
+
+    private:
+        std::array<uint16_t, amount_subkeys> subkeys;
+        size_t pos_current_subkey;
+        Direction path;
+    };
+}
+
 
 #endif // ROUNDKEY_H
