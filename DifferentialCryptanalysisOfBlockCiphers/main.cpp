@@ -7,7 +7,7 @@
 #include "../CommonLib/ioworker.h"
 #include "../CommonLib/logger.h"
 
-mclogger::Logger logger = mclogger::Logger::get_logger();
+
 
 static Action _s_action = UNDEFINED;
 static char *_s_input_file = NULL;

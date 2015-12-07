@@ -2,7 +2,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include "HeysCipher.h"
-#include "mylog.h"
+#include "../CommonLib/logger.h"
+
 
 #define SUB_BLOCKS		4
 #define BITS_IN_SUB_BLOCK    4
@@ -24,17 +25,17 @@ struct heys_cipher {
 		/* clear i and k bits in x */					\
 		(x & ~(1<<i) & ~(1<<k))
 
-static uint16_t _s_sbox[] = {0xF, 0x6, 0x5, 0x8, 0xE, 0xB, 0xA, 0x4, 0xC, 0x0, 0x3, 0x7, 0x2, 0x9, 0x1, 0xD};
-
-static inline void addition_with_key(uint16_t *a_block, uint16_t a_key);
-static inline void substitution_by_sbox(uint16_t *a_block);
-static inline void permutation_of_bits(uint16_t *a_block);
-static inline void encrypt(RoundKey *a_round_key, uint16_t *a_block);
-static inline void decrypt(RoundKey *a_round_key, uint16_t *a_block);
-
-typedef void(*action_worker)(RoundKey *a_round_key, uint16_t *a_block);
-
-static action_worker do_action[] = {encrypt, decrypt};
+//static uint16_t _s_sbox[] = {0xF, 0x6, 0x5, 0x8, 0xE, 0xB, 0xA, 0x4, 0xC, 0x0, 0x3, 0x7, 0x2, 0x9, 0x1, 0xD};
+//
+//static inline void addition_with_key(uint16_t *a_block, uint16_t a_key);
+//static inline void substitution_by_sbox(uint16_t *a_block);
+//static inline void permutation_of_bits(uint16_t *a_block);
+//static inline void encrypt(RoundKey *a_round_key, uint16_t *a_block);
+//static inline void decrypt(RoundKey *a_round_key, uint16_t *a_block);
+//
+//typedef void(*action_worker)(RoundKey *a_round_key, uint16_t *a_block);
+//
+//static action_worker do_action[] = {encrypt, decrypt};
 
 /*****************************************************************
  **************** PUBLIC FUNCTIONS *******************************
@@ -144,4 +145,91 @@ static inline void decrypt(RoundKey *a_round_key, uint16_t *a_block)
 		addition_with_key(a_block, round_key_next_subkey(a_round_key));
 	}
 
+}
+
+
+namespace mc {
+
+	HeysCipher::HeysCipher(RoundKey& a_round_key) : round_key(a_round_key) {
+		logger.debug("HeysCipher constructor was called");
+	}
+
+	HeysCipher::~HeysCipher() { }
+
+	void HeysCipher::run(Action a_action, std::vector<uint16_t> &a_input, std::vector<uint16_t> &a_output) {
+		
+	}
+
+	uint16_t HeysCipher::addition_with_key(uint16_t a_block, uint16_t a_key) {
+		return a_block ^ a_key;
+	}
+
+	uint16_t HeysCipher::substitution_by_sbox(uint16_t a_block) {
+
+		uint16_t output = 0;
+		int pos = 0;
+
+		for (int i = 0; i < amount_subblocks; ++i) {
+			pos = (a_block >> 4 * i) & 0xF;
+			output += sbox[pos];
+			output <<= 4 * i;
+		}
+		return output;
+	}
+
+	inline uint16_t HeysCipher::permutation_of_bits(uint16_t a_block) {
+		uint16_t output = a_block;
+		uint16_t pos_i = 0;
+		uint16_t pos_j = 0;
+
+		for (int i = 0; i < amount_subblocks; ++i) {
+			for (int j = i + 1; j < amount_bit_in_subblock; ++j) {
+
+				pos_i = (uint16_t) (i * amount_bit_in_subblock + j);
+				pos_j = (uint16_t) (j * amount_bit_in_subblock + i);
+				output = (uint16_t) (SWAP_BITS(output, pos_i, pos_j));
+			}
+		}
+		return output;
+	}
+
+	inline uint16_t HeysCipher::encrypt(uint16_t a_input) {
+
+		uint16_t output = 0;
+		uint16_t subkey = 0;
+
+		round_key.set_direction(FORWARD);
+		round_key.reset_position();
+
+		for (int round = 0; round < amount_rounds; ++round) {
+			subkey = round_key.next_subkey();
+			output = addition_with_key(a_input, subkey);
+			output = substitution_by_sbox(output);
+			output = permutation_of_bits(output);
+		}
+
+		subkey = round_key.next_subkey();
+		output = addition_with_key(output, subkey);
+		return output;
+	}
+
+	inline uint16_t HeysCipher::decrypt(uint16_t a_input) {
+		uint16_t output = 0;
+		uint16_t subkey = 0;
+
+		round_key.set_direction(BACKWARD);
+		round_key.reset_position();
+
+		subkey = round_key.next_subkey();
+		output = addition_with_key(a_input, subkey);
+
+		for (int round = 0; round < amount_rounds; ++round) {
+			output = permutation_of_bits(output);
+			output = substitution_by_sbox(output);
+			subkey = round_key.next_subkey();
+			output = addition_with_key(output, subkey);
+		}
+
+		return output;
+	}
 }

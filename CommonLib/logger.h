@@ -59,4 +59,7 @@ namespace mc {
     };
 }
 
+
+mc::Logger logger = mc::Logger::get_logger();
+
 #endif //MODERN_CRYPTOLOGY_LOGGER_H
