@@ -60,6 +60,6 @@ namespace mc {
 }
 
 
-mc::Logger logger = mc::Logger::get_logger();
+extern mc::Logger& logger;
 
 #endif //MODERN_CRYPTOLOGY_LOGGER_H

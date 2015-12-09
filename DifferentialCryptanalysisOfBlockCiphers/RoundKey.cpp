@@ -108,7 +108,7 @@ namespace mc {
 //		generate_new();
 	}
 
-	RoundKey::RoundKey(Direction a_path) :path(a_path) {
+	RoundKey::RoundKey(Direction a_path) : path(a_path) {
 		logger.debug("RoundKey constructor with direction was called");
 		reset_position();
 		generate_new();

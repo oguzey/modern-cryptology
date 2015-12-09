@@ -33,10 +33,11 @@ namespace mc {
 
     class RoundKey {
     public:
-        const int amount_subkeys = 7;
+        static const int amount_subkeys = 7;
         RoundKey();
         RoundKey(Direction a_path);
         RoundKey(const std::array<uint16_t, amount_subkeys> &subkeys, Direction path);
+        static const int get_amount_subkesy() { return amount_subkeys; };
         void set_direction(const Direction a_path) { this->path = a_path; };
         void generate_new();
         void set_key(const std::array<uint16_t, amount_subkeys> &a_subkeys);
