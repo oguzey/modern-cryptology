@@ -20,11 +20,10 @@ int IOWorker::get_size_file(const char *a_filename)
 	}
 
 	if (stat(a_filename, &sb) == -1) {
-		logger.critical("Could not process file '%s'", a_filename);
+		logger.critical("Could not process file '{}'", a_filename);
 		return -1;
 	}
-	logger.info("The file '%s' has size: %d bytes", a_filename,
-			(int) sb.st_size);
+	logger.info("The file '{}' has size: {} bytes", a_filename, sb.st_size);
 	return (int)sb.st_size;
 }
 
@@ -49,7 +48,7 @@ int IOWorker::read_file(const char *a_filename, std::vector<uint8_t> &a_output)
 	size = res;
 
 	if ((file = fopen(a_filename, "r")) == NULL) {
-		logger.critical("Could not open file '%s'", a_filename);
+		logger.critical("Could not open file '{}'", a_filename);
 		return -1;
 	}
 
@@ -70,10 +69,10 @@ int IOWorker::read_file(const char *a_filename, std::vector<uint16_t> &a_output)
 		return ret;
 	}
 
-	logger.info("read_file out8 size: {}", out8.size());
-	for (int i = 0; i < out8.size(); ++i) {
-		logger.info("{0} {1:x}", i, out8[i]);
-	}
+//	logger.info("read_file out8 size: {}", out8.size());
+//	for (int i = 0; i < out8.size(); ++i) {
+//		logger.info("{0} {1:x}", i, out8[i]);
+//	}
 
 	ret = (int) IOWorker::convert2unit16_t(out8, a_output);
 	return ret;
@@ -100,10 +99,10 @@ void IOWorker::write_to_file(std::vector<uint16_t> &a_input, const char *a_filen
 	std::vector<uint8_t> input8;
 	IOWorker::convert2unit8_t(a_input, input8);
 
-	logger.info("write_to_file output size: {}", input8.size());
-	for (int i = 0; i < a_input.size(); ++i) {
-		logger.info("{0} {1:x}", i, a_input[i]);
-	}
+//	logger.info("write_to_file output size: {}", input8.size());
+//	for (int i = 0; i < a_input.size(); ++i) {
+//		logger.info("{0} {1:x}", i, a_input[i]);
+//	}
 
 	IOWorker::write_to_file(input8, a_filename);
 }

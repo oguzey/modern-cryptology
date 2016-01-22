@@ -40,19 +40,19 @@ int main(int argc, char **argv)
 		logger.critical("Error occurred during reading input-file.");
 	}
 
-	logger.info("input size: {}", input.size());
-	for (int i = 0; i < input.size(); ++i) {
-		logger.info("{0} {1:x}", i, input[i]);
-	}
+//	logger.info("input size: {}", input.size());
+//	for (int i = 0; i < input.size(); ++i) {
+//		logger.info("{0} {1:x}", i, input[i]);
+//	}
 
 	if (_s_action == UNDEFINED) {
 		logger.critical("Action is wrong.");
 	}
 
-	logger.info("subkeys size {}", subkeys.size());
-	for (int i = 0; i < subkeys.size(); ++i) {
-		logger.info("{0} {1:x}", i, subkeys[i]);
-	}
+//	logger.info("subkeys size {}", subkeys.size());
+//	for (int i = 0; i < subkeys.size(); ++i) {
+//		logger.info("{0} {1:x}", i, subkeys[i]);
+//	}
 
 	RoundKey round_key(subkeys, _s_action == ENCRYPT ? FORWARD : BACKWARD);
 	HeysCipher heys_cipher(&round_key);
@@ -60,10 +60,10 @@ int main(int argc, char **argv)
 	std::vector<uint16_t> output;
 	heys_cipher.run(_s_action, input, output);
 
-	logger.info("output size: {}", output.size());
-	for (int i = 0; i < output.size(); ++i) {
-		logger.info("{0} {1:x}", i, output[i]);
-	}
+//	logger.info("output size: {}", output.size());
+//	for (int i = 0; i < output.size(); ++i) {
+//		logger.info("{0} {1:x}", i, output[i]);
+//	}
 
 	IOWorker::write_to_file(output, _s_output_file);
 

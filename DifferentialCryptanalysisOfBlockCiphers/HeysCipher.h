@@ -39,12 +39,12 @@ public:
 	void run(Action a_action, std::vector<uint16_t> &a_input, std::vector<uint16_t> &a_output);
 
 private:
-	static const std::array<uint16_t, 16> sbox;
+	static const std::array<std::array<uint16_t, 16>, 2> sboxs;
 	RoundKey *round_key;
 	inline uint16_t encrypt(uint16_t a_input);
 	inline uint16_t decrypt(uint16_t a_input);
 	inline uint16_t addition_with_key(uint16_t a_block, uint16_t a_key);
-	inline uint16_t substitution_by_sbox(uint16_t a_block);
+	inline uint16_t substitution_by_sbox(Action a_action, uint16_t a_block);
 	inline uint16_t permutation_of_bits(uint16_t a_block);
 
 
