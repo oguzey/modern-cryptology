@@ -2,7 +2,7 @@
 #include <sys/stat.h>
 #include <vector>
 #include "ioworker.h"
-#include "mylog.h"
+#include "logger.h"
 
 /**
  * @brief get_size_file - Return size of file, in bytes.
@@ -15,15 +15,15 @@ int IOWorker::get_size_file(const char *a_filename)
 	struct stat sb;
 
 	if (!a_filename) {
-		warn("File not provided.");
+		logger.warn("File not provided.");
 		return -1;
 	}
 
 	if (stat(a_filename, &sb) == -1) {
-		error("Could not process file '%s'", a_filename);
+		logger.critical("Could not process file '%s'", a_filename);
 		return -1;
 	}
-	info("The file '%s' has size: %d bytes", a_filename,
+	logger.info("The file '%s' has size: %d bytes", a_filename,
 			(int) sb.st_size);
 	return (int)sb.st_size;
 }
@@ -43,13 +43,13 @@ int IOWorker::read_file(const char *a_filename, std::vector<uint8_t> &a_output)
 	int size = 0;
 
 	if ((res = get_size_file(a_filename)) < 0) {
-		warn("Error was occurred.");
+		logger.warn("Error was occurred.");
 		return -1;
 	}
 	size = res;
 
 	if ((file = fopen(a_filename, "r")) == NULL) {
-		error("Could not open file '%s'", a_filename);
+		logger.critical("Could not open file '%s'", a_filename);
 		return -1;
 	}
 
@@ -69,6 +69,12 @@ int IOWorker::read_file(const char *a_filename, std::vector<uint16_t> &a_output)
 	if (ret < 0) {
 		return ret;
 	}
+
+	logger.info("read_file out8 size: {}", out8.size());
+	for (int i = 0; i < out8.size(); ++i) {
+		logger.info("{0} {1:x}", i, out8[i]);
+	}
+
 	ret = (int) IOWorker::convert2unit16_t(out8, a_output);
 	return ret;
 }
@@ -78,7 +84,7 @@ void IOWorker::write_to_file(std::vector<uint8_t> &a_input, const char *a_filena
 	FILE *file;
 
 	if ((file = fopen(a_filename, "w")) == NULL) {
-		error("Could not open file '%s'", a_filename);
+		logger.critical("Could not open file '%s'", a_filename);
 		exit(1);
 	}
 
@@ -91,8 +97,14 @@ void IOWorker::write_to_file(std::vector<uint8_t> &a_input, const char *a_filena
 
 void IOWorker::write_to_file(std::vector<uint16_t> &a_input, const char *a_filename)
 {
-	std::vector<uint8_t> input8(a_input.size() * 2);
+	std::vector<uint8_t> input8;
 	IOWorker::convert2unit8_t(a_input, input8);
+
+	logger.info("write_to_file output size: {}", input8.size());
+	for (int i = 0; i < a_input.size(); ++i) {
+		logger.info("{0} {1:x}", i, a_input[i]);
+	}
+
 	IOWorker::write_to_file(input8, a_filename);
 }
 
@@ -120,6 +132,7 @@ size_t IOWorker::convert2unit16_t(const std::vector<uint8_t> &a_in, std::vector<
 
 int IOWorker::convert2unit8_t(const std::vector<uint16_t> &a_in, std::vector<uint8_t> &a_out)
 {
+	int i = 0;
 	for (auto it = a_in.begin(); it != a_in.end(); ++it) {
 		a_out.push_back((uint8_t)(*it & 0xFF));
 		a_out.push_back((uint8_t)(*it >> 8 & 0xFF));
