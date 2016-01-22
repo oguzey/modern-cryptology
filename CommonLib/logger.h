@@ -37,29 +37,32 @@ namespace mc {
         }
 
         template<typename... Args>
-        void debug(const char *fmt, const Args &... args) {
+        void debug(const char *fmt, const Args... args) {
             this->console_logger->debug(fmt, args...);
         }
 
         template<typename... Args>
-        void info(const char *fmt, const Args &... args) {
+        void info(const char *fmt, const Args... args) {
             this->console_logger->info(fmt, args...);
         }
 
         template<typename... Args>
-        void warn(const char *fmt, const Args &... args) {
+        void warn(const char *fmt, const Args... args) {
             this->console_logger->warn(fmt, args...);
         }
 
         template<typename... Args>
-        void critical(const char *fmt, const Args &... args) {
+        void critical(const char *fmt, const Args... args) {
             this->console_logger->critical(fmt, args...);
             exit(-1);
         }
     };
 }
 
-
+#ifdef ALLOCATE
+mc::Logger& logger = mc::Logger::get_logger();
+#else
 extern mc::Logger& logger;
+#endif
 
 #endif //MODERN_CRYPTOLOGY_LOGGER_H

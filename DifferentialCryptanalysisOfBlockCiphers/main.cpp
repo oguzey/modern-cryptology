@@ -5,6 +5,8 @@
 #include "RoundKey.h"
 #include "HeysCipher.h"
 #include "../CommonLib/ioworker.h"
+
+#define ALLOCATE
 #include "../CommonLib/logger.h"
 
 
@@ -19,20 +21,13 @@ static inline void get_args(int argc, char **argv);
 int main(int argc, char **argv)
 {
 	int res = 0;
-	size_t size = 0;
-	RoundKey *round_key = NULL;
-	HeysCipher *heys_cipher = NULL;
-
-	std::vector<uint8_t> *tmp_data = nullptr;
-	std::vector<uint16_t> *subkeys = nullptr;
-	std::vector<uint16_t> *input = nullptr;
-	std::vector<uint16_t> *output = nullptr;
+	std::vector<uint16_t> subkeys;
+	std::vector<uint16_t> input;
 
 	get_args(argc, argv);
 
 	if (_s_key_file) {
-		res = IOWorker::read_file(_s_key_file, &subkeys);
-
+		res = IOWorker::read_file(_s_key_file, subkeys);
 		if (res < 0) {
 			logger.critical("Error occurred during reading key-file.");
 		} else if (res == AMOUNT_SUBKEYS_IN_BYTES) {
@@ -40,25 +35,37 @@ int main(int argc, char **argv)
 		}
 	}
 
-	res = IOWorker::read_file(_s_input_file, &input);
+	res = IOWorker::read_file(_s_input_file, input);
 	if (res < 0) {
 		logger.critical("Error occurred during reading input-file.");
 	}
 
-	round_key = round_key_create(subkeys);
-	heys_cipher = heys_cipher_create(round_key);
+	logger.info("input size: {}", input.size());
+	for (int i = 0; i < input.size(); ++i) {
+		logger.info("{0} {1:x}", i, input[i]);
+	}
 
-	heys_cipher_run(heys_cipher, _s_action, input, size, &output);
+	if (_s_action == UNDEFINED) {
+		logger.critical("Action is wrong.");
+	}
 
-	write_to_file(output, size, _s_output_file);
+	logger.info("subkeys size {}", subkeys.size());
+	for (int i = 0; i < subkeys.size(); ++i) {
+		logger.info("{0} {1:x}", i, subkeys[i]);
+	}
 
-	heys_cipher_destroy(heys_cipher);
-	round_key_destroy(round_key);
+	RoundKey round_key(subkeys, _s_action == ENCRYPT ? FORWARD : BACKWARD);
+	HeysCipher heys_cipher(&round_key);
 
-	free(input);
-	free(output);
-	free(subkeys);
+	std::vector<uint16_t> output;
+	heys_cipher.run(_s_action, input, output);
 
+	logger.info("output size: {}", output.size());
+	for (int i = 0; i < output.size(); ++i) {
+		logger.info("{0} {1:x}", i, output[i]);
+	}
+
+	IOWorker::write_to_file(output, _s_output_file);
 
 	logger.info("End program.");
 	return 0;
