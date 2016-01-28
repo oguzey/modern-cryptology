@@ -5,22 +5,6 @@
 #include <stddef.h>
 #include <vector>
 
-//typedef struct heys_cipher HeysCipher;
-//
-//typedef enum {
-//	UNDEFINED = 0,
-//	ENCRYPT,
-//	DECRYPT
-//} Action;
-//
-//HeysCipher* heys_cipher_create(RoundKey *a_round_key);
-//
-//void heys_cipher_destroy(HeysCipher *a_heys_cipher);
-//
-//void heys_cipher_run(HeysCipher *a_heys_cipher, Action a_action, uint16_t *a_input_data
-//		,size_t a_size, uint16_t **a_output_data);
-//
-//
 enum Action {
 	UNDEFINED = -1,
 	ENCRYPT,
@@ -37,9 +21,11 @@ public:
 	HeysCipher(RoundKey *a_round_key);
 	~HeysCipher();
 	void run(Action a_action, std::vector<uint16_t> &a_input, std::vector<uint16_t> &a_output);
+	void calc_dp_for_sbox(std::array<std::array<double, 16>, 16> &dp_sbox);
+	void calc_dp_table(std::array<std::array<double, UINT16_MAX + 1>, UINT16_MAX + 1> &dp_cipher);
 
 private:
-	static const std::array<std::array<uint16_t, 16>, 2> sboxs;
+	std::array<std::array<uint16_t, 16>, 2> sboxs;
 	RoundKey *round_key;
 	inline uint16_t encrypt(uint16_t a_input);
 	inline uint16_t decrypt(uint16_t a_input);
@@ -47,10 +33,7 @@ private:
 	inline uint16_t substitution_by_sbox(Action a_action, uint16_t a_block);
 	inline uint16_t permutation_of_bits(uint16_t a_block);
 
-
 };
-
-
 
 
 #endif // HEYSCIPHER_H

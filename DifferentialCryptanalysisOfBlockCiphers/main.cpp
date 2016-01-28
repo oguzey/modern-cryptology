@@ -57,6 +57,19 @@ int main(int argc, char **argv)
 	RoundKey round_key(subkeys, _s_action == ENCRYPT ? FORWARD : BACKWARD);
 	HeysCipher heys_cipher(&round_key);
 
+
+
+	std::array<std::array<double, UINT16_MAX + 1>, UINT16_MAX + 1> dp_cipher;
+	heys_cipher.calc_dp_table(dp_cipher);
+
+	for (int alfa = 0; alfa <= UINT16_MAX; ++alfa) {
+		for (int beta = 0; beta <= UINT16_MAX; ++beta) {
+			std::cout << dp_cipher[alfa][beta] << " ";
+		}
+		std::cout << std::endl << std::endl;
+	}
+
+
 	std::vector<uint16_t> output;
 	heys_cipher.run(_s_action, input, output);
 

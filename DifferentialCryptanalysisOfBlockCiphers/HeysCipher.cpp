@@ -20,11 +20,12 @@ static const std::array<uint16_t, 16> sbox =
 static const std::array<uint16_t, 16> sbox_inverse =
 		{0x9, 0xE, 0xC, 0xA, 0x7, 0x2, 0x1, 0xB, 0x3 , 0xD, 0x6, 0x5, 0x8, 0xF, 0x4, 0x0};
 
-const std::array<std::array<uint16_t, 16>, 2> HeysCipher::sboxs = {sbox, sbox_inverse};
+
 
 HeysCipher::HeysCipher(RoundKey *a_round_key)
 {
 	round_key = a_round_key;
+	sboxs = {sbox, sbox_inverse};
 	logger.debug("HeysCipher created with RoundKey object");
 }
 
@@ -54,12 +55,12 @@ uint16_t HeysCipher::substitution_by_sbox(Action a_action, uint16_t a_block) {
 	uint16_t output = 0;
 	uint16_t tmp = 0;
 	int pos = 0;
-	//logger.debug("substitution_by_sbox starting with {:X}", a_block);
+	logger.debug("substitution_by_sbox starting with {:X}", a_block);
 	for (int i = 0; i < amount_subblocks; ++i) {
 		pos = (a_block >> 4 * i) & 0xF;
 		tmp = HeysCipher::sboxs[a_action][pos];
 		output += (tmp << (4 * i));
-		//logger.debug("step {}:  pos = {:X},  tmp = {:X}, output = {:X}", i, pos, tmp, output);
+		logger.debug("step {}:  pos = {:X},  tmp = {:X}, output = {:X}", i, pos, tmp, output);
 	}
 	return output;
 }
@@ -131,4 +132,42 @@ inline uint16_t HeysCipher::decrypt(uint16_t a_input) {
 	}
 	//logger.debug("Final result decryption for {:X} is output {:X} ", a_input, output);
 	return output;
+}
+
+void HeysCipher::calc_dp_for_sbox(std::array<std::array<double, 16>, 16> &dp_sbox) {
+	std::array<uint16_t, 16> &sbox = sboxs[ENCRYPT];
+	for (int alfa = 0; alfa < 16; ++alfa) {
+		for (int beta = 0; beta < 16; ++beta) {
+			dp_sbox[alfa][beta] = 0.0;
+			for (int x = 0; x < 16; ++x) {
+				if (sbox[x ^ alfa] == (sbox[x] ^ beta)) {
+					dp_sbox[alfa][beta] += 0.0625;
+				}
+			}
+		}
+	}
+}
+
+void HeysCipher::calc_dp_table(std::array<std::array<double, UINT16_MAX + 1>, UINT16_MAX + 1> &dp_cipher) {
+
+	std::array<std::array<double, 16>, 16> dp_sbox;
+	calc_dp_for_sbox(dp_sbox);
+
+	for (uint16_t alfa = 0; alfa <= UINT16_MAX; ++alfa) {
+		for (uint16_t beta = 0; beta <= UINT16_MAX; ++beta) {
+
+			int beta_s = permutation_of_bits(beta);
+			int alfa_i = alfa & 0xF;
+			int beta_s_i = beta_s & 0xF;
+			dp_cipher[alfa][beta] = dp_sbox[alfa_i][beta_s_i];
+			logger.info("take alfa_i = {:X}, beta_i = {:X}", alfa_i, beta_s_i);
+
+			for (int i = 1; i < 4; ++i) {
+				alfa_i = (beta_s >> 4 * i) & 0xF;
+				beta_s_i = (beta_s >> 4 * i) & 0xF;
+				dp_cipher[alfa][beta] *= dp_sbox[alfa_i][beta_s_i];
+			}
+			logger.info("dp_cipher[{:X}][{:X}] = {}", alfa, beta, dp_cipher[alfa][beta]);
+		}
+	}
 }
